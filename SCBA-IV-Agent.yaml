@@ -1,0 +1,1626 @@
+version: 6
+meta:
+  name: SCBA-IV-Agent
+  description: >+
+    **The inventory agent is designed to assist a store manager persona who must
+    make decisions and take actions concerning his product inventory. We
+    illustrate some business cases below which we believe may be useful to the
+    store manager persona.**
+
+
+    _Samsung TVs Use Case Script_
+
+    - [what North America region has the lowest inventory level for Samsung
+    TVs?](ask:what%20North%20America%20region%20has%20the%20lowest%20inventory%20level%20for%20Samsung%20TVs%3F)
+
+    - [show me the stock situation for these
+    stores](ask:show%20me%20the%20stock%20situation%20for%20these%20stores)
+
+    - [show me which of them are below reorder
+    threshold](ask:show%20me%20which%20of%20them%20are%20below%20reorder%20threshold)
+
+    - [show me in-transit inventory to Auro_Store_1 for Samsung
+    TVs](ask:show%20me%20in-transit%20inventory%20to%20Auro_Store_1%20for%20Samsung%20TVs)
+
+    - [show me the demand at this
+    store](ask:show%20me%20the%20demand%20at%20this%20store)
+
+    - [what are the closest stores with high inventory for this
+    item?](ask:what%20are%20the%20closest%20stores%20with%20high%20inventory%20for%20this%20item%3F)
+
+    - [transfer 10 units of Samsung TVs from Auro_Store_2 to
+    Auro_Store_1](ask:transfer%2010%20units%20of%20Samsung%20TVs%20from%20Auro_Store_2%20to%20Auro_Store_1)
+
+
+
+    _some types of questions you can ask_
+
+
+    - show me stores with low threshold level for gaming computers [__filter by
+    threshold level__]
+
+    - show me stores with high inventory for gaming computers [__filter by
+    inventory level__]
+
+    - show me supply for Auro_Store_1 [__get demand__]
+
+    - show me demand for Auro_Store_1 [__get supply__]
+
+  bundler: webpack
+secrets:
+  - name: URL
+  - name: tenantID
+  - name: clientSecret
+  - name: clientID
+concepts:
+  - name: 'om:InTransitSupply'
+    ontology:
+      isSpellAs: in transit
+      subClassOf: ':Showable'
+  - name: 'om:Items'
+    ontology:
+      isSpellAs: items|*
+      subClassOf: ':Showable'
+      isListOf: 'om:Item'
+  - name: 'om:Item'
+    ontology:
+      isSpellAs: item
+      subClassOf: ':Showable'
+    attributes:
+      'om:UnitOfMeasure': unitOfMeasure
+      'om:Description': description
+      ':ID': id
+  - name: 'om:ItemName'
+  - name: ':ID'
+  - name: 'om:UnitOfMeasure'
+    ontology:
+      isSpellAs: unit of measure
+      subClassOf:
+        - ':Attribute'
+        - ':StrAttribute'
+  - name: 'om:Description'
+    ontology:
+      isSpellAs: description
+      subClassOf:
+        - ':Attribute'
+        - ':StrAttribute'
+  - name: 'om:Warehouses'
+    ontology:
+      subClassOf: ':Showable'
+      isListOf: 'om:Warehouse'
+      isSpellAs: warehouses|*
+  - name: 'om:Warehouse'
+    ontology:
+      isSpellAs: warehouse
+      subClassOf: ':Showable'
+  - name: 'om:Stores'
+    ontology:
+      subClassOf:
+        - ':Showable'
+        - 'om:StoresLike'
+      isSpellAs: stores|*
+      isListOf: 'om:Store'
+  - name: 'om:StoreName'
+  - name: 'om:Store'
+    ontology:
+      subClassOf:
+        - ':Showable'
+        - 'om:StoreLike'
+      isSpellAs: store
+    attributes:
+      'om:Longitude': longitude
+      'om:Latitude': latitude
+      ':Name': shipNode
+  - name: ':Name'
+  - name: 'om:Latitude'
+    ontology:
+      isSpellAs: latitude
+      subClassOf:
+        - ':Attribute'
+        - ':NumAttribute'
+  - name: 'om:Longitude'
+    ontology:
+      isSpellAs: longitude
+      subClassOf:
+        - ':Attribute'
+        - ':NumAttribute'
+  - name: 'om:Coordinates'
+    ontology:
+      isSpellAs: coordinates
+      subClassOf: ':Showable'
+  - name: 'om:Inventories'
+    ontology:
+      isSpellAs: inventory availabilities
+      subClassOf:
+        - ':Showable'
+        - 'om:StoresLike'
+      isListOf: 'om:Inventory'
+  - name: 'om:Inventory'
+    ontology:
+      isSpellAs: inventory availability
+      subClassOf:
+        - ':Showable'
+        - 'om:StoreLike'
+  - name: 'om:StoreLike'
+  - name: 'om:StoresLike'
+  - name: 'om:SupplyInventory'
+    ontology:
+      isSpellAs: supply inventory
+      subClassOf: ':Showable'
+  - name: 'om:InventoryLevelPredicate'
+  - name: 'om:HighInventory'
+    ontology:
+      isSpellAs: high inventory level
+      subClassOf: 'om:InventoryLevelPredicate'
+  - name: 'om:LowInventory'
+    ontology:
+      isSpellAs: low inventory level
+      subClassOf: 'om:InventoryLevelPredicate'
+  - name: 'om:InTransit'
+  - name: 'om:Threshold'
+  - name: 'om:ThresholdPredicate'
+  - name: 'om:HighThreshold'
+    ontology:
+      subClassOf: 'om:ThresholdPredicate'
+      isSpellAs: high inventory threshold
+  - name: 'om:MediumThreshold'
+    ontology:
+      subClassOf: 'om:ThresholdPredicate'
+      isSpellAs: medium inventory threshold
+  - name: 'om:LowThreshold'
+    ontology:
+      subClassOf: 'om:ThresholdPredicate'
+      isSpellAs: low inventory threshold
+  - name: 'om:BelowThreshold'
+    ontology:
+      subClassOf: 'om:ThresholdPredicate'
+      isSpellAs: depleted threshold
+    notes: 'todo: fix spelling'
+  - name: 'om:StockOverview'
+    ontology:
+      isSpellAs: stock overview
+      subClassOf: ':Showable'
+  - name: 'om:DemandInventory'
+    ontology:
+      subClassOf: ':Showable'
+      isSpellAs: demand
+  - name: 'om:GeoImpacts'
+    ontology:
+      isSpellAs: impacts|*
+      subClassOf: ':Showable'
+  - name: 'nlg:With'
+    ontology:
+      subClassOf: 'nlg:PostModifier'
+      isSpellAs: with
+  - name: 'nlg:In'
+    ontology:
+      subClassOf: 'nlg:PostModifier'
+      isSpellAs: in
+  - name: 'nlg:Is'
+    ontology:
+      isSpellAs: is
+  - name: 'nlg:For'
+    ontology:
+      subClassOf: 'nlg:PostModifier'
+      isSpellAs: for
+  - name: 'nlg:PreModifier'
+  - name: 'nlg:PostModifier'
+  - name: ':Which'
+    ontology:
+      subClassOf: 'om:FilterLike'
+  - name: 'message:SearchGeoImpact'
+    ontology:
+      isSpellAs: Would you like me to search for related impacts in $1?
+  - name: 'om:Region'
+    ontology:
+      subClassOf: ':Showable'
+      isSpellAs: region
+  - name: ':Showable'
+  - name: ':NumAttribute'
+  - name: ':Attribute'
+  - name: ':Relation'
+  - name: ':Filter'
+    ontology:
+      subClassOf: 'om:FilterLike'
+  - name: ':StrAttribute'
+  - name: 'action:Filter'
+  - name: 'om:Closest'
+    ontology:
+      isSpellAs: closest|adj!
+      subClassOf: 'nlg:PreModifier'
+  - name: ':WithName'
+  - name: ':Message'
+  - name: ':ActionShow'
+  - name: ':All'
+  - name: 'spacy:Location'
+  - name: 'om:FilterLike'
+  - name: 'om:Units'
+  - name: ':Number'
+  - name: ':Confirmation'
+  - name: 'om:From'
+  - name: 'om:To'
+patterns: >-
+  <!-- basic data model -->
+
+  - show me [stores](om:Stores) with gaming computers
+
+  - tell me which [stores](om:Stores) these are
+
+  - show me the [latitude](om:Latitude) and the [longitude](om:Longitude) for
+  this store
+
+  - show me [item|product](om:Item) 123
+
+  - show me the [unit of measure](om:UnitOfMeasure) for this product
+
+  - show me the [description](om:Description) of this product
+
+  - show me the [warehouses](om:Warehouses)
+
+  - show me the [inventory|inventory level|availability|inventory
+  overview](om:Inventories)
+
+  - show me the [inventory](om:Inventory) for this product at this store
+
+  - show me the [stock situation|stock inventory|inventory
+  stock](om:Inventories) stores with Samsung TVs
+
+
+  <!-- custom location KPIS -->
+
+  - show me the [closest](om:Closest) [region](om:Region) for this product
+
+  - show me [coordinates|coords](om:Coordinates) of this store
+
+
+  <!-- patterns for aggregating by classes of inventory levels -->
+
+  - show me stores with gaming computers with [low|lowest](om:LowInventory)
+  [inventory|inventory levels](om:LowInventory)
+
+  - show me stores with gaming computers with [high|highest](om:HighInventory)
+  [inventory|inventory levels](om:HighInventory)
+
+
+  <!-- patterns for aggregating by threshold NOTE: assumes that "below reorder
+  threshold" means with "low threshold" -->
+
+  - show me stores with inventory [below|below the minimum|below
+  minimum](om:BelowThreshold) [reorder threshold|threshold|inventory
+  threshold|treshold level](om:BelowThreshold)
+
+  - show me stores with [low](om:LowThreshold) [threshold|inventory
+  threshold|treshold level](om:LowThreshold)
+
+  - show me stores with [medium](om:MediumThreshold) [threshold|inventory
+  threshold|treshold level](om:MediumThreshold)
+
+  - show me stores with [high](om:HighThreshold) [threshold|inventory
+  threshold|treshold level](om:HighThreshold)
+
+
+  <!-- patterns for supply and demand  -->
+
+  - show me [inventory](om:InTransitSupply) [in-transit|in
+  transit|transit|incoming](om:InTransitSupply) for this store
+
+  - show me [transit|in transit|in-transit|incoming](om:InTransitSupply)
+  [inventory](om:InTransitSupply) to this store
+
+  - show me the [supply|supplies|supply inventory|supplied
+  inventory](om:SupplyInventory)
+
+  - show me the [demand|demand inventory](om:DemandInventory) for this store and
+  this product
+ontobot: ''
+actions:
+  - name: 'om:GetInTransitSupply'
+    signature: >-
+      om:InTransitSupply (optional :Relation (data om:Store, context data
+      om:Item)) -> data om:InTransitSupply
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const store = await p.get('om:Store')
+        const item = await p.get('om:Item')
+        const dataWithContext = await iv.getInTransitSupplyInventory(store, item, helpers.getSecretsWithContext(params))
+        const inventory = dataWithContext.data
+        
+        const meta = new eba.NLToken('om:InTransitSupply')
+          .addProperty(':Relation', p.getMeta('om:Store').addProperty('nlg:With', p.getMeta('om:Item')))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:InTransitSupply', inventory)
+          .setMeta('om:InTransitSupply', meta), dataWithContext)
+      }
+  - name: 'om:MakeTransferUnits'
+    signature: 'om:Units (data :Number, data om:Item) -> data om:Units'
+    kind: 'nodejs:10'
+    code: |-
+      const eba = require('eba')
+      const _   = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const numUnits = await p.get(':Number')
+        const item    = await p.get('om:Item')
+        
+        return new eba.Result()
+          .setData('om:Units', {numUnits: 10, item: item})
+      }
+  - name: 'om:ImplyProductByName'
+    signature: 'om:ItemName -> data om:Item'
+    kind: 'nodejs:10'
+    code: |-
+      const eba = require('eba')
+      const oms = require('./oms.js')
+      const _   = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        
+        const name = p.get('om:ItemName')
+        const product = await oms.getProduct(name)
+        
+        const meta = new eba.NLToken('om:Item')
+          .addProperty(':WithName', new eba.NLToken('nlg:PlainText', name))
+        
+        return new eba.Result()
+          .setData('om:Item', product)
+          .setMeta('om:Item', meta)
+      }
+  - name: 'om:GetProductByName'
+    signature: 'om:Item (optional :WithName (om:ItemName)) -> data om:Item'
+    kind: 'nodejs:10'
+    code: |-
+      const eba = require('eba')
+      const oms = require('./oms.js')
+      const _   = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        
+        const name = p.get('om:ItemName')
+        
+        const product = await oms.getProduct(name)
+        
+        const meta = new eba.NLToken('om:Product')
+          .addProperty(':WithName', new eba.NLToken('nlg:PlainText', name))
+        
+        return new eba.Result()
+          .setData('om:Item', product)
+          .setMeta('om:Item', meta)
+      }
+  - name: 'om:ImplyStoreByName'
+    signature: 'om:StoreName -> data om:Store'
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const name = p.get('om:StoreName')
+        const dataWithContext = await iv.getStoreByName(name, helpers.getSecretsWithContext(params))
+        const store = dataWithContext.data
+        
+        const meta = new eba.NLToken('om:Store')
+          .addProperty(':WithName', new eba.NLToken('nlg:PlainText', name))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Store', store)
+          .setMeta('om:Store', meta), dataWithContext)
+          
+      }
+  - name: 'om:GetStoreByName'
+    signature: 'om:Store (optional :WithName (om:StoreName)) -> data om:Store'
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js') 
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const name = p.get('om:StoreName')
+        const dataWithContext = await iv.getStoreByName(name, helpers.getSecretsWithContext(params))
+        const store = dataWithContext.data
+
+        const meta = new eba.NLToken('om:Store')
+          .addProperty(':WithName', new eba.NLToken('nlg:PlainText', name))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Store', store)
+          .setMeta('om:Store', meta), dataWithContext)
+      }
+  - name: 'om:GetClosestStore'
+    signature: >-
+      om:Store @target (om:Closest, context data om:Store @source) -> data
+      om:Store
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js') 
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+
+      // credits: https://andrew.hedges.name/experiments/haversine/
+      const calculateDistance = (src, target) => {
+        const radius = 6373.0
+        const deltaLon = target.longitude - src.longitude
+        const deltaLat = target.latitude - src.latitude
+        const a = (Math.sin(deltaLat/2))^2 + Math.cos(src.latitude) * Math.cos(target.latitude) * (Math.sin(deltaLon/2))^2
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return radius * c
+      }
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const knownStore = await p.get('source')
+        
+        // note: we can use distributionGroup as initial subset instead of all locaions
+        const dataWithContext = await iv.getShipNodes(helpers.getSecretsWithContext(params))
+        const eligibleStores = _.filter(dataWithContext.data, ({shipNode}) => shipNode != knownStore.shipNode)
+        const startNode = _.head(eligibleStores)
+        
+        const closestStore = _.reduce(eligibleStores, (closest, current) => {
+          const currentDistance = calculateDistance(knownStore, current)
+          const closestDistance = calculateDistance(knownStore, closest)
+          return (currentDistance < closestDistance) ? current : closest
+        }, startNode)
+
+        const meta = new eba.NLToken('om:Store')
+          .addProperty('om:Closest')
+          .addProperty(':Relation', new eba.NLToken('nlg:PlainText', knownStore.shipNode))
+
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Store', closestStore)
+          .setMeta('om:Store', meta), dataWithContext)
+        
+      }
+  - name: 'om:GetAllStores'
+    signature: 'om:Stores (optional :All) -> data om:Stores'
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+
+        const dataWithContext = await iv.getShipNodes(helpers.getSecretsWithContext(params))
+        const stores = dataWithContext.data
+
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Stores', stores), dataWithContext)
+      }
+  - name: 'om:GetStoresByGeo'
+    signature: 'om:Stores (optional :Relation (spacy:Location)) -> data om:Stores'
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const location = await p.get('spacy:Location')
+        const geo  = _.get(location, 'text')
+        
+        const group = 'NewEngland_Stores'
+        const dataWithContext = await iv.getStoresByGroup(group, helpers.getSecretsWithContext(params))
+        const stores = dataWithContext.data
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Stores', stores)
+          .store('group', group), dataWithContext)
+      }
+  - name: 'om:GetStoresByItem'
+    signature: >-
+      filter subClassOf om:FilterLike => om:Stores (filter (context data
+      om:Item)) -> data om:Stores
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      const getFromStores = (stores, inventory, field) => {
+        return _.chain(stores)
+          .find((store) => store.shipNode === inventory.shipNode)
+          .get(field)
+          .value()
+      }
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const stores = await p.get('om:Stores')
+        const item = await p.get('om:Item')
+        const dataWithContext = await iv.getNodeAvailability(stores, item, helpers.getSecretsWithContext(params))
+        const inventory = dataWithContext.data
+        
+        // const storesByItem = _.map(inventory, (i) => {
+        //   return {
+        //     shipNode: i.shipNode,
+        //     latitude: getFromStores(stores, i, 'latitude'),
+        //     longitude: getFromStores(stores, i, 'longitude')
+        //   }
+        // })
+        
+        const meta = p.getMeta('om:Stores')
+          .addProperty('nlg:With', p.getMeta('om:Item'))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Stores', inventory)
+          .setMeta('om:Stores', meta), dataWithContext)
+        
+        
+      }
+  - name: 'om:GetStoresByGeoAndItem'
+    signature: >-
+      filter subClassOf om:FilterLike => om:Stores (optional :Relation
+      (spacy:Location), optional filter (context data om:Item)) -> data
+      om:Stores
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      const updateContext = (base, ctx) => {
+        const newContext = _.clone(base)
+        
+        if (ctx.authorization)
+          newContext.authorization = ctx.authorization
+        
+        if (ctx.expiration)
+          newContext.expiration = ctx.expiration
+        
+        return newContext
+      }
+
+      module.exports.main = async (params) => {
+        const p        = new eba.Params(params)
+        const item     = await p.get('om:Item')
+        const location = p.get('spacy:Location')
+        const geo      = _.get(location, 'location')
+        const group    = 'NewEngland_Stores'
+        
+        const secrets = helpers.getSecretsWithContext(params)
+        const dataWithContext = await iv.getStoresByGroup(group, secrets)
+        
+        params.storage = updateContext(params.storage, dataWithContext)
+        const _dataWithContext = await iv.getNodeAvailability(dataWithContext.data, item, helpers.getSecretsWithContext(params))
+        const stores = _dataWithContext.data
+        
+        console.log('stores', JSON.stringify(stores))
+        
+        const meta = new eba.NLToken('om:Stores')
+          .addProperty(':Relation', new eba.NLToken('nlg:PlainText', geo))
+          .addProperty(':Relation', new eba.NLToken('nlg:PlainText'))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Stores', stores)
+          .setMeta('om:Stores', meta)
+          .store('group', group), _dataWithContext)
+      }
+  - name: 'om:GetClosestStores'
+    signature: >-
+      om:Stores (om:Closest (optional :Relation (context data om:Store))) ->
+      data om:Stores
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js') 
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      // credits: https://andrew.hedges.name/experiments/haversine/
+      const calculateDistance = (src, target) => {
+        const radius = 6373.0
+        const deltaLon = target.longitude - src.longitude
+        const deltaLat = target.latitude - src.latitude
+        const a = (Math.sin(deltaLat/2))^2 + Math.cos(src.latitude) * Math.cos(target.latitude) * (Math.sin(deltaLon/2))^2
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+        return radius * c
+      }
+
+      module.exports.main = async (params) => {
+        const secrets = helpers.getSecretsWithContext(params)
+
+        const p = new eba.Params(params)
+        const knownStore = await p.get('om:Store')
+
+        // note: we can use distributionGroup as initial subset instead of all locaions
+        const dataWithContext = (params.storage.group)
+          ? await iv.getStoresByGroup(params.storage.group, secrets)
+          : await iv.getShipNodes(secrets)
+
+        const eligibleStores = _.filter(dataWithContext.data, ({shipNode}) => shipNode != knownStore.shipNode)
+        
+        const closestStores = _.chain(eligibleStores)
+          .map((store) => _.extend(store, {distance: calculateDistance(knownStore, store)}))
+          .orderBy('distance', ['asc'])
+          .take(10)
+          .value()
+        
+        const meta = new eba.NLToken('om:Stores')
+          .addProperty('om:Closest')
+          .addProperty(':Relation', new eba.NLToken('nlg:PlainText', knownStore.shipNode))
+
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Stores', closestStores)
+          .setMeta('om:Stores', meta), dataWithContext)
+        
+      }
+  - name: 'om:GetInventory'
+    signature: >-
+      om:Inventories (data om:Stores, context data om:Item) -> data
+      om:Inventories
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const stores = await p.get('om:Stores')
+        const item = await p.get('om:Item')
+        
+        const dataWithContext = await iv.getNodeAvailability(stores, item, helpers.getSecretsWithContext(params))
+        const inventory = dataWithContext.data
+        console.log('inventory', _.head(inventory))
+        
+        const meta = new eba.NLToken('om:Inventories')
+          .addProperty(':Relation', p.getMeta('om:Stores'))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Inventories', inventory)
+          .setMeta('om:Inventories', meta), dataWithContext)
+      }
+  - name: 'om:FilterStoresByThreshold'
+    signature: >-
+      thresholdPredicate subClassOf om:ThresholdPredicate, filter subClassOf
+      om:FilterLike => filter (data om:Stores, context data om:Item,
+      thresholdPredicate) -> data om:Inventories
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      const resolveNodes = (inventories, lowerBound, upperBound) => {
+        return _.filter(inventories, ({thresholdLevel}) => {
+          return (lowerBound <= thresholdLevel) &&
+            (!upperBound || thresholdLevel <= upperBound)
+        })
+      }
+
+      const filterByThreshold = (inventories, thresholds, predicate) => {
+        return {
+          'om:BelowThreshold': () => resolveNodes(inventories, 0, thresholds.low),
+          'om:LowThreshold': () => resolveNodes(inventories, thresholds.low, thresholds.medium),
+          'om:MediumThreshold': () => resolveNodes(inventories, thresholds.medium, thresholds.high),
+          'om:HighThreshold': () => resolveNodes(inventories, thresholds.high, null)
+        }[predicate]() 
+      }
+
+      const resolvePredicate = (predicate) => {
+        return {
+          'om:BelowThreshold': 'depleted threshold',
+          'om:LowThreshold': 'low threshold',
+          'om:MediumThreshold': 'medium threshold',
+          'om:HighThreshold': 'high threshold'
+        }[predicate]
+      }
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const stores = await p.get('om:Stores')
+        const item = await p.get('om:Item')
+        const predicate = await p.getName('thresholdPredicate')
+        
+        const dataWithContext = await iv.getNodeAvailability(stores, item, helpers.getSecretsWithContext(params))
+        const inventories = dataWithContext.data
+        
+        const _dataWithContext = await iv.getThresholds(helpers.getSecretsWithContext(params))
+        const thresholds = _dataWithContext.data
+        
+        const predicateMeta = resolvePredicate(predicate)
+        const inventoryByThreshold = _.map(filterByThreshold(inventories, thresholds, predicate), (inventory) => {
+          return _.extend(inventory, {meta: predicateMeta})
+        })
+        
+        const meta = new eba.NLToken('om:Inventories')
+          .addProperty(':Relation', p.getMeta('om:Stores'))
+          .addProperty('nlg:With', new eba.NLToken(predicate))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Inventories', inventoryByThreshold)
+          .setMeta('om:Inventories', meta), _dataWithContext)
+      }
+    active: true
+  - name: 'om:FilterStoresByInventory'
+    signature: >-
+      inventoryPredicate subClassOf om:InventoryLevelPredicate, filter
+      subClassOf om:FilterLike => filter (data om:Stores, context data om:Item,
+      inventoryPredicate) -> data om:Inventories
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      const filterQuartile = (inventories, predicate) => {
+        const quartile = Math.round(inventories.length * 0.25)
+        const direction = (predicate === 'low') ? ['asc'] : ['desc']
+        return _(inventories)
+          .orderBy('onhandAvailableQuantity', direction)
+          .take(quartile)
+          .value()
+      }
+
+      const filterByInventoryPredicate = (inventories, predicate) => {
+        return {
+          'om:LowInventory': () => filterQuartile(inventories, 'low'),
+          'om:HighInventory': () => filterQuartile(inventories, 'high')
+        }[predicate]()
+      }
+
+      const resolveMeta = (predicate) => {
+        return {
+          'om:LowInventory': 'lowest',
+          'om:HighInventory': 'highest'
+        }[predicate]
+      } 
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const stores = await p.get('om:Stores')
+        const item   = await p.get('om:Item')
+        const predicate = p.getName('inventoryPredicate')
+        const dataWithContext = await iv.getNodeAvailability(stores, item, helpers.getSecretsWithContext(params))
+        const inventories = dataWithContext.data
+        
+        const predicateMeta = resolveMeta(predicate)
+        const storesByInventory = _.map(filterByInventoryPredicate(inventories, predicate), (inventory) => {
+          return _.extend(inventory, {meta: predicateMeta})
+        })
+
+        const meta = new eba.NLToken('om:Inventories')
+          .addProperty(':Relation', p.getMeta('om:Stores'))
+          .addProperty('nlg:With', new eba.NLToken(predicate))
+
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:Inventories', storesByInventory)
+          .setMeta('om:Inventories', meta), dataWithContext)
+      }
+    active: true
+  - name: 'om:GetRegionByStores'
+    signature: >-
+      stores subClassOf om:StoresLike => om:Region (optional :Relation (data
+      stores)) -> data om:Region
+    kind: 'nodejs:10'
+    code: |-
+      const eba = require('eba')
+      const _   = require('lodash')
+
+      // hard coded output
+      // todo: derive notion of "region" from set of (lat,lon)
+      const getRegionByStores = (stores) => {
+        return 'New England'
+      }
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const stores = await p.get('stores')
+        
+        const region = getRegionByStores(stores)
+        
+        const showGeoEvents = new eba.NLToken(':ActionShow')
+          .addProperty('', new eba.NLToken('om:GeoImpacts'))
+        
+        return new eba.Result()
+          .setData('om:Region', region)
+          .set('@create', {
+            'stores': {
+              name: 'suggestion',
+              type: '',
+              data: showGeoEvents,
+              meta: new eba.NLToken('message:SearchGeoImpact').addProperty('$1', new eba.NLToken('nlg:PlainText', region))
+            }
+          })
+          .store('geo', region)
+      }
+    notes: mocked
+    active: true
+  - name: 'om:GetSupplyInventory'
+    signature: >-
+      om:SupplyInventory (optional :Relation (data om:Store, context data
+      om:Item)) -> data om:SupplyInventory
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const store = await p.get('om:Store')
+        const item = await p.get('om:Item')
+        const dataWithContext = await iv.getSupplyInventory(store, item, helpers.getSecretsWithContext(params))
+        const inventory = dataWithContext.data
+        
+        const meta = new eba.NLToken('om:SupplyInventory')
+          .addProperty(':Relation', p.getMeta('om:Store').addProperty('nlg:With', p.getMeta('om:Item')))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:SupplyInventory', inventory)
+          .setMeta('om:SupplyInventory', meta), dataWithContext)
+      }
+    active: true
+  - name: 'om:GetDemandInventory'
+    signature: >-
+      om:DemandInventory (optional :Relation (data om:Store, context data
+      om:Item)) -> data om:DemandInventory
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const store = await p.get('om:Store')
+        const item  = await p.get('om:Item')
+        const dataWithContext = await iv.getDemandInventory(store, item, helpers.getSecretsWithContext(params))
+        const demand = dataWithContext.data
+
+        const meta = new eba.NLToken('om:DemandInventory')
+          .addProperty(':Relation', p.getMeta('om:Store').addProperty('nlg:With', p.getMeta('om:Item')))
+        
+        return helpers.returnWithContext(new eba.Result()
+          .setData('om:DemandInventory', demand)
+          .setMeta('om:DemandInventory', meta), dataWithContext)
+      }
+    active: true
+  - name: 'om:GetCoordinatesByStore'
+    signature: 'om:Coordinates (optional :Relation (data om:Store)) -> data om:Coordinates'
+    kind: 'nodejs:10'
+    code: |-
+      const eba = require('eba')
+      const _   = require('lodash')
+
+      module.exports.main = async (params) => {
+        const p = new eba.Params(params)
+        const store = await p.get('om:Store')
+        
+        const coordinates = {
+          latitude: _.get(store, 'latitude'),
+          longitude: _.get(store, 'longitude')
+        }
+        
+        return new eba.Result()
+          .setData('om:Coordinates', coordinates)
+      }
+    active: true
+  - name: 'om:GetGeoEvents'
+    signature: 'om:GeoImpacts -> data om:GeoImpacts'
+    kind: 'nodejs:10'
+    code: |-
+      const eba = require('eba')
+
+      module.exports.main = async (params) => {
+        const impacts = ['Please be aware that expected order volume is expected to increase 30\% in the New England area during the [Click Frenzy marketing event].', 'This event combined with supply disruption significantly increases the risk of future stock out conditions.']
+        return new eba.Result()
+          .setData('om:GeoImpacts', {geo: 'New England', impacts})
+        
+      }
+    active: true
+rules:
+  - name: 'om:FilterBelowThreshold'
+    signature: >-
+      om:Inventories (om:BelowThreshold) -> :Filter (om:Inventories,
+      om:BelowThreshold)
+  - name: 'om:ImplyStoresByRegion'
+    signature: 'om:Region -> om:Stores'
+endpoints:
+  - name: '@annotate'
+    kind: 'nodejs:10'
+    code: |-
+      const eba     = require('eba')
+      const helpers = require('./helpers.js')
+      const iv      = require('./iv.js')
+      const _       = require('lodash')
+
+      const withNewEntry = (xs, x) => { xs.push(x); return xs; }
+
+      const getStoreNames = async (params) => {
+        const stores = _.get(params, 'storage.stores')
+        return (!_.isEmpty(stores))
+          ? helpers.putInContext(stores)
+          : await iv.getShipNodes(helpers.getSecretsWithContext(params))
+      }
+
+      module.exports.main = async (params) => {
+        const dataWithContext = await getStoreNames(params)
+        const stores = dataWithContext.data
+        
+        const knownStores = _.reduce(stores, (acc, store) => {
+            return _.includes(_.toLower(store.shipNode), 'store')
+              ? withNewEntry(acc, store.shipNode)
+              : acc
+          }, [])
+
+        const knownItems = ['gaming computers', 'samsung televisions', 'samsung tvs']
+
+
+        const namedEntityTree = eba.mapTree(params.input.tokens, (tt) => {
+          const form = _.toLower(_.trimStart(tt.token.form))
+          
+          // includes some naive substring checks
+          // todo: apply stringent multi-token matching
+          const storeName = _.find(knownStores, (name) => _.toLower(name) === form)
+          const itemName  = _.find(knownItems, (item) => _.some(_.split(item, ' '), (split) => _.toLower(split) === form))
+          
+          // todo: insert data the right way
+          if (storeName && form != 'store')
+            tt = eba.insertAnnotation(tt, 'om:StoreName', 1.0, storeName)
+          
+          if (itemName)
+            tt = eba.insertAnnotation(tt, 'om:ItemName', 1.0, itemName)
+
+          return tt
+        })
+        
+        return helpers.returnWithContext(new eba.Result(namedEntityTree)
+          .store('stores', stores), dataWithContext)
+      }
+statics:
+  - name: iv.js
+    mime: text/javascript
+    text: |-
+      const rp = require('request-promise-native')
+      const _  = require('lodash')
+
+
+      const enrichStore = async (store, {tenantID, authorization}) => {
+        const opts = {
+          uri: `https://api.watsoncommerce.ibm.com/inventory/${tenantID}/v1/configuration/shipNodes/${store.shipNode}`,
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${authorization}`
+          },
+          json: true
+        }
+        return rp(opts)
+      }
+
+      const enrichStores = async (stores, region, secrets) => {
+        const promises = _.map(stores, (store) => enrichStore(store, secrets))
+        return await Promise.all(promises)
+      }
+
+      const refreshToken = async (secrets) => {
+        const opts = {
+          uri: `https://edge-api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/oauth2/token`,
+          method: 'POST',
+          form: {
+           'client_id': secrets.clientID,
+           'client_secret': secrets.clientSecret,
+           'grant_type': 'client_credentials'
+          },
+          json: true
+        }
+
+        return rp(opts)
+      }
+
+      const getStoresByGroup = async (group, secrets) => {
+        const fn = async (secrets) => {
+          const opts = {
+            uri: `https://edge-api.watsoncommerce.ibm.com/inventory/us-89fa7b64/v1/configuration/distributionGroups/${group}`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`,
+              'Content-Type': 'application/json'
+            },
+            json: true
+          }
+          
+          return rp(opts)
+            .then(async (obj) => {
+              const stores = _.chain(obj).get('shipNodes').filter(({shipNode}) => !_.includes(shipNode, 'WH')).value()
+              return await enrichStores(stores, group, secrets)
+            })
+        }
+        const fallbackMessage = `I could not find stores in distribution group ${group}`
+        return await safeInvoke(fn, secrets, fallbackMessage)
+      }
+
+
+      const getShipNodes = async (secrets) => {
+        const fn = (secrets) => {
+          const opts = {
+            uri: `https://api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/configuration/shipNodes`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`,
+              'Content-Type': 'application/json'
+            },
+            json: true
+          }
+          return rp(opts).then(json => _.filter(json, ({shipNode}) => !_.includes(shipNode, 'WH')))
+        }
+        return await safeInvoke(fn, secrets)
+      }
+
+      const getStoreByName = async (node, secrets) => {
+        const fn = (secrets) => {
+          const opts = {
+            uri: `https://api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/configuration/shipNodes/${node}`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`,
+              'Content-Type': 'application/json'
+            },
+            json: true
+          }
+          return rp(opts)
+        }
+        const fallbackMessage = `I could not find any store named ${node}`
+        return await safeInvoke(fn, secrets, fallbackMessage)
+      }
+
+      const getNodeAvailability = async (stores, item, secrets) => {
+        const nodes = _.map(stores, 'shipNode')
+        const fn = async  (secrets) => {
+          const opts = {
+            uri: `https://edge-api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/availability/node`,
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`,
+              'Content-Type': 'application/json'
+            },
+            body: {
+              lines: [{
+                itemId: item.itemID,
+                lineId: '1',
+                deliveryMethod: 'SHP',
+                unitOfMeasure: item.unitOfMeasure,
+                shipNodes: nodes
+                
+              }]
+            },
+            json: true
+          }
+          return rp(opts)
+            .then((object) => {
+              const path = 'lines.[0].shipNodeAvailability'
+              const itemID = item.itemID
+              const nodes = _.get(object, path)
+              return _.map(nodes, (node) => {
+                const store = _.find(stores, ({shipNode}) => shipNode == node.shipNode) 
+                const _node = _.merge(store, node)
+                return _.extend(_node, { itemID })
+              })
+            })
+        }
+        
+        const fallbackMessage = `I could not any find stores for ${item.name}`
+        return await safeInvoke(fn, secrets, fallbackMessage)
+      }
+
+      const getThresholds = async (secrets) => {
+        const fn = async (secerts) => {
+          const opts = {
+            uri: `https://api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/configuration/thresholds`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`,
+              'Content-Type': 'application/json'
+            },
+            json: true
+          }
+          return rp(opts)
+        }
+
+        return await safeInvoke(fn, secrets)
+      }
+
+      const getSupplyInventory = async (store, item, secrets) => {
+        const fn = async (secrets) => {
+          const opts = {
+            uri: `https://api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/supplies`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`
+            },
+            qs: {
+              'unitOfMeasure': _.get(item, 'unitOfMeasure'),
+              'productClass': '',
+              'shipNode': _.get(store, 'shipNode'),
+              'itemId': _.get(item, 'itemID')
+            },
+            json: true
+          }
+          return rp(opts)
+            .then(res => {
+              console.log('res', res)
+              return _.head(res)
+          })
+        }
+        const fallbackMessage = `I could not find supply for store named ${store.shipNode}.`
+        return await safeInvoke(fn, secrets, fallbackMessage)
+      }
+
+      const getInTransitSupplyInventory = async (store, item, secrets) => {
+        const fn = async (secrets) => {
+          const opts = {
+            uri: `https://api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/supplies`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`
+            },
+            qs: {
+              'unitOfMeasure': _.get(item, 'unitOfMeasure'),
+              'productClass': '',
+              'shipNode': _.get(store, 'shipNode'),
+              'itemId': _.get(item, 'itemID')
+            },
+            json: true
+          }
+          
+          return rp(opts).then(json => {
+            console.log(json);
+            return _.filter(json, ({quantity, type}) => (!_.includes(type, 'ONHAND') && quantity > 0));
+          })
+        }
+        const fallbackMessage = `I could not find in-transit inventory for store named ${store.shipNode}.`
+        return await safeInvoke(fn, secrets, fallbackMessage)
+      }
+
+
+      const getDemandInventory = async (store, item, secrets) => {
+        const fn = async (secrets) => {
+          const opts = {
+            uri: `https://api.watsoncommerce.ibm.com/inventory/${secrets.tenantID}/v1/demands`,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${secrets.authorization}`
+            },
+            qs: {
+              'itemId': _.get(item, 'itemID'),
+              'productClass': '',
+              'shipNode': _.get(store, 'shipNode'),
+              'unitOfMeasure': _.get(item, 'unitOfMeasure')
+            },
+            json: true
+          }
+          return rp(opts)
+            .then(res => _.filter(res, ({quantity}) => (quantity > 0)));
+        }
+        
+        const fallbackMessage = `I could not find demand for store named ${store.shipNode}`
+        return await safeInvoke(fn, secrets, fallbackMessage)
+      }
+
+      module.exports = { 
+        getStoresByGroup,
+        getShipNodes,
+        getStoreByName,
+        getNodeAvailability,
+        getThresholds,
+        getInTransitSupplyInventory,
+        getSupplyInventory,
+        getDemandInventory
+      }
+    frontend: false
+    backend: true
+  - name: oms.js
+    mime: text/javascript
+    text: |-
+      const rp = require('request-promise-native')
+      const _  = require('lodash')
+
+      const normalizeItem = (response, keyword) => {
+        console.log('response', JSON.stringify(response))
+        const item = _.get(response, 'ItemList.Item.[0]')
+        return {
+          unitOfMeasure: _.get(item, 'UnitOfMeasure'),
+          itemID: _.get(item, 'ItemID'),
+          name: keyword,
+          productClass: _.get(item, 'PrimaryInformation.DefaultProductClass'),
+          description: _.get(item, 'PrimaryInformation.ShortDescription')
+        }
+
+      }
+
+      module.exports.getProduct = async (keyword) => {
+        const opts = {
+          uri: 'https://oms-scba.innovationcloud.info/smcfs/restapi/invoke/searchCatalogIndex',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          qs: { '_templateId': 'BDA_keywordSearch'},
+          method: 'POST',
+          json: true,
+          body: {
+            'CallingOrganizationCode': 'Aurora',
+            'PageSize': '1',
+            'Terms': { 'Term': [{ 'Value': keyword }] }
+          }
+        }
+        return rp(opts)
+          .then((response) => normalizeItem(response, keyword))
+          .catch((err) => { console.log(err); throw `I could not find any product for ${keyword}` })
+      }
+    backend: true
+  - name: helpers.js
+    mime: text/javascript
+    text: |-
+      const _ = require('lodash')
+
+      module.exports.getSecretsWithContext = (params) => {
+        return _.extend(params.secrets, {
+          authorization: params.storage.authorization,
+          expiration: params.storage.expiration
+        })
+      }
+
+      module.exports.putInContext = (data) => {
+        return { data }
+      }
+
+      module.exports.returnWithContext = (result, storage) => {
+        return result
+          .store('authorization', storage.authorization)
+          .store('expiration', storage.expiration)
+      }
+    backend: true
+  - name: viz.coffee
+    mime: application/vnd.coffeescript
+    text: |-
+      export class om_ItemData extends PureComponent
+        render: ->
+          React.createElement Props,
+            data: @props.data
+            style: "plain"
+            props: [
+              ["ID", "itemID", renderText]
+              ["Unit of Measure", "unitOfMeasure", renderText]
+              ["Description", "description", renderText]
+            ]
+
+      export class om_StoreData extends PureComponent
+        render: ->
+          R.div className: "iv-store-viz",
+            React.createElement Props,
+              data: @props.data
+              style: "plain"
+              props: [
+                ["Name", "shipNode", renderText]
+                ["Latitude", "latitude", renderText]
+                ["Longitude", "longitude", renderText]
+              ]
+            
+            if !@props.data.hideMaps
+              R.a
+                target: "_blank"
+                href: "https://www.google.com/maps/@#{@props.data.latitude},#{@props.data.longitude},10z"
+                "maps"
+
+      export class om_StoresData extends PureComponent
+        render: ->
+          React.createElement Table,
+            items: @props.data
+            title: R.h2 null, "Stores"
+            columns: [
+              ["Name", "shipNode", renderText]
+              # ["Maps", "latitude", @renderMap]
+            ]
+
+      export class om_StoreMapPopup extends PureComponent
+        render: ->
+          R.div null,
+            R.div null, "Name: #{@props.data.shipNode}"
+            R.div null, "Location: (#{@props.data.latitude}, #{@props.data.longitude})"
+
+      export class om_StoresContent extends PureComponent
+          mixins: [LazyDataMixin]
+
+          constructor: (props) ->
+              super props
+              @LOW_ZOOM  = 5
+              @HIGH_ZOOM = 10
+              @state = {}
+
+          componentDidMount: ->
+              overlayMaps = []
+
+              getCentroid = () =>
+                latitudes    = _.map @props.data, "latitude"
+                longitudes   = _.map @props.data, "longitude"
+                avgLatitude  = _.sum(latitudes) / latitudes.length
+                avgLongitude = _.sum(longitudes) / longitudes.length
+                return [avgLatitude, avgLongitude]
+                
+
+              baseMaps = [
+                  name: "Wikimedia Maps"
+                  layer: L.tileLayer "https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png", attribution: "&copy; <a href='https://www.mediawiki.org/wiki/Maps' target='_blank'>Wikimedia Maps</a>"
+                  active: true
+              ]
+
+              layers = []
+              if _.isEmpty(layers)
+                  for {layer, active} in baseMaps
+                      if active
+                          layers.push(layer)
+
+
+              map = L.map @refs?.map,
+                  center: getCentroid()
+                  zoom: if @props.data.length > 25 then @LOW_ZOOM else @HIGH_ZOOM
+                  layers: layers
+
+              toLayers = (maps) ->
+                  layers = {}
+                  for {name, layer} in maps
+                      layers[name] = layer
+                  layers
+
+              L.control.layers(toLayers(baseMaps), toLayers(overlayMaps)).addTo(map)
+              
+              _.forEach @props.data, (data) =>
+                  data = _.extend data, hideMaps: true
+                  L.marker([data.latitude,data.longitude])
+                    .addTo(map)
+                    .bindPopup(ReactDOMServer.renderToStaticMarkup(React.createElement om_StoreMapPopup, data: data))
+                    .openPopup()
+          
+              @setState {map, baseMaps}
+
+          componentWillUnmount: ->
+              @state.map?.remove()
+
+          render: ->
+              React.createElement Resizeable,
+                  style:
+                    height: "100%"
+                    minHeight: 800
+                    width: "100%"
+                    minWidth: 800
+                  onResize: =>
+                      @state.map.invalidateSize()
+                  R.div
+                      ref:"map"
+                      style:
+                          width: "100%"
+                          height: "100%"
+
+      export class om_InventoryData extends PureComponent
+        render: ->
+          React.createElement Props,
+            data: @props.data
+            style: "plain"
+            props: [
+              ["Store", "shipNode", renderText, width: "50%"]
+              ["Item", "itemID", renderText, width: "40%"]
+              ["Inventory", "onhandAvailableQuantity", renderDecimal, width: "8%"]
+              ["Map", "longitude", @renderMap]
+              ["Earliest Ship Time", "earliestShipTs", renderDate]
+              ["Latest Ship Time", "latestShipTs", renderDate]
+              ["Unit of Measure", "unitOfMeasure", renderText]
+            ]
+
+      export class om_InventoriesData extends PureComponent
+        renderMap: (value, item) =>
+          R.a
+            target: "_blank"
+            href: "https://www.google.com/maps/@#{item.latitude},#{item.longitude},10z"
+            "maps"
+
+        render: ->
+            sample = _.head @props.data
+            itemID = _.get sample, "itemID"
+            React.createElement Table,
+              items: @props.data
+              title: R.h2 null, "Inventory for Item ##{itemID}"
+              config: 
+                "latestShipTs": visible: false
+                "unitOfMeasure": visible: false
+                "longitude": visible: false
+                "latestShipTs": visible: false
+                "unitOfMeasure": visible: false
+                "earliestShipTs": visible: false
+                "totalAvailableInventory":visible: false
+              columns: [
+                ["Store", "shipNode", renderText, width: "70%"]
+                ["Onhand inventory", "onhandAvailableQuantity", renderDecimal, width: "1%"]
+                ["Future inventory", "futureAvailableQuantity", renderDecimal, width: "1%"]
+                ["Earliest Ship Time", "earliestShipTs", renderDate]
+                ["Total inventory", "totalAvailableInventory", renderDecimal]
+                ["Earliest Ship time", "earliestShipTs", renderDate]
+              ]
+
+      # export class om_InventoriesContent extends PureComponent
+      #   render: ->
+      #     layout =
+      #       title: "Inventory availabilties"
+      #       xaxis: title: "On hand quantity"
+      #       yaxis: title: "Total quantity"
+          
+          
+      #     traces = [
+      #       type: "scatter"
+      #       x: _.map @props.data, "onhandAvailableQuantity"
+      #       y: _.map @props.data, "totalAvailableQuantity"
+      #       marker: size: 10
+      #     ]
+          
+      #     React.createElement PlotlyChart,
+      #       traces: traces
+      #       layout: layout
+
+      export class om_InventoriesContent extends PureComponent
+        render: ->
+          sample = _.head @props.data
+          heading = _.get sample, "meta"
+          layout =
+            title: if heading? then "#{_.startCase(heading)} Inventory Availabilties" else "Inventory Availabilties"
+            xaxis: title: "Store"
+            yaxis: title: "Total quantity"
+            showlegend: true
+          
+          traceOnHand = 
+            name: "On-hand"
+            type: "bar"
+            x: _.map @props.data, "shipNode"
+            y: _.map @props.data, "onhandAvailableQuantity"
+            marker: size: 10
+        
+          traceTotal =
+            name: "Total"
+            type: "bar"
+            x: _.map @props.data, "shipNode"
+            y: _.map @props.data, "totalAvailableQuantity"
+            marker: size: 10
+          
+          traces = [ traceOnHand, traceTotal ]
+          
+          React.createElement PlotlyChart,
+            traces: traces
+            layout: layout
+            
+      export class om_DemandInventoryData extends PureComponent
+        renderStockBar: (level) ->
+          R.div
+            style: 
+                backgroundColor: "#4178be"
+                width: (level / 50) * 100
+                height: 20
+
+        renderUnits: (level) -> "#{level} units"
+        
+        render: ->
+          sample = _.head @props.data
+          itemID = _.get sample, "itemId"
+          React.createElement Table,
+            items: @props.data
+            title: R.h2 null, "Demand for #{itemID}"
+            config: 
+              "latestShipTs": visible: false
+              "unitOfMeasure": visible: false
+              "longitude": visible: false
+              "latestShipTs": visible: false
+              "unitOfMeasure": visible: false
+              "earliestShipTs": visible: false
+              "totalAvailableInventory":visible: false
+            columns: [
+              ["Type", "type", renderText, width: "20%"]
+              ["Quantity", "quantity", renderDecimal, width: "20%"]
+              ["Ship Date", "shipDate", renderDate, width: "20%"]
+            ]
+
+      export class om_SupplyInventoryData extends PureComponent
+        render: ->
+          R.div null,
+            R.h2 null, "Supply inventory"
+            React.createElement Props,
+              data: @props.data
+              style: "plain"
+              props: [
+                ["Item", "itemId", renderText]
+                ["Quantity", "quantity", renderDecimal]
+                ["Estimated time of arrival", "eta", renderDate]
+                ["Type", "type", renderText]
+                ["Unit of measure", "unitOfMeasure", renderText]
+              ]
+
+      export class om_InTransitSupplyData extends PureComponent
+        render: ->
+            sample = _.head @props.data
+            itemID = _.get sample, "itemId"
+            React.createElement Table,
+              items: @props.data
+              title: R.h2 null, "In-transit inventory for Item #{itemID}"
+              config: 
+                "latestShipTs": visible: false
+                "unitOfMeasure": visible: false
+                "longitude": visible: false
+                "latestShipTs": visible: false
+                "unitOfMeasure": visible: false
+                "earliestShipTs": visible: false
+                "totalAvailableInventory":visible: false
+              columns: [
+                ["Type", "type", renderText, width: "20%"]
+                ["Quantity", "quantity", renderDecimal, width: "20%"]
+                ["Eta", "eta", renderDate, width: "20%"]
+              ]
+
+              
+      export class om_GeoImpactsData extends PureComponent
+        render: -> 
+          React.createElement List,
+            items: @props.data.impacts
+            renderList: (items) =>
+              R.div null,
+                R.h2 null, "#{@props.data.geo} impacts"
+                R.ul
+                  style:
+                    margin: 0
+                  _.map items, (item) =>
+                    R.li style: marginTop: 10, React.createElement Markdown, text: item
+
+      export class om_RegionData extends PureComponent
+        render: -> renderText(@props.data)
+
+      export class om_CoordinatesData extends PureComponent
+        render: ->
+          React.createElement Props,
+            data: @props.data
+            style: "plain"
+            props: [
+              ["Latitude", "latitude", renderText]
+              ["Longitude", "longitude", renderText]
+            ]
+    active: true
+    frontend: true
+  - name: viz.scss
+    mime: text/x-scss
+    text: |-
+      .iv-store-viz {
+        :first-child {
+          margin-bottom: 0px; 
+        }
+      }
+    active: true
+    frontend: true
+training:
+  - context: show me store named Auro_Store_1
+    question: show me the closest store with high inventory for gaming computers
+    explanation: >-
+      show me the closest store of stores with high inventory for gaming
+      computers
+experience: >-
+  eyJjb250ZW50SWQiOiI5MGY3Njc5MTcxOTEyYWFhZjRkNDI2NjllOGQwZjhhNDFmOGIxNDQ4IiwiZmVlZGJhY2siOnt9LCJsYXN0VXBkYXRlZCI6MTU2NjA5MDM2Mi4zNjUyMDM0LCJwYXR0ZXJucyI6W10sInJld3JpdGVSdWxlcyI6W10sInNwZWxsaW5nTWFwIjp7IjpGaWx0ZXIiOltbImZvciIsMC41XSxbIndpdGgiLDAuNDU0NTQ1NDU0NTQ1NDU0NTNdLFsiaGFzIiwwLjA0NTQ1NDU0NTQ1NDU0NTQ1Nl1dLCI6TnVtYmVyIjpbWyIxMjMiLDAuNV0sWyIxMCIsMC41XV0sIjpSZWxhdGlvbiI6W1siZm9yIiwwLjM5Mjg1NzE0Mjg1NzE0Mjg1XSxbIm9mIiwwLjIxNDI4NTcxNDI4NTcxNDI3XSxbIndpdGgiLDAuMTc4NTcxNDI4NTcxNDI4NThdLFsidG8iLDAuMTA3MTQyODU3MTQyODU3MTRdLFsiaW4iLDAuMDcxNDI4NTcxNDI4NTcxNDJdLFsiZnJvbSIsMC4wMzU3MTQyODU3MTQyODU3MV1dLCI6V2hpY2giOltbIndoaWNoIiwwLjc1XSxbIndoaWNoIG9mIiwwLjI1XV0sIml2OkFjdGlvblRyYW5zZmVyIjpbWyJ0cmFuc2ZlciIsMV1dLCJpdjpIaWdoIjpbWyJoaWdoIiwxXV0sIml2OkxhdGl0dWRlIjpbWyJsYXRpdHVkZSIsMV1dLCJpdjpMb25naXR1ZGUiOltbImxvbmdpdHVkZSIsMV1dLCJpdjpMb3ciOltbImxvdyIsMC42NjY2NjY2NjY2NjY2NjY2XSxbImxvd2VzdCIsMC4zMzMzMzMzMzMzMzMzMzMzXV0sIml2Ok1lZGl1bSI6W1sibWVkaXVtIiwxXV0sIml2OlJlZ2lvbk5hbWUiOltbIm5hIiwwLjY2NjY2NjY2NjY2NjY2NjZdLFsibmV3IGVuZ2xhbmQiLDAuMzMzMzMzMzMzMzMzMzMzM11dLCJuZTpDb3VudHJ5IjpbWyJlbmdsYW5kIiwxXV19LCJ2ZXJzaW9uIjoiMS4xLjAiLCJyZXBvcnRzIjpbeyJjb3ZlcmFnZSI6MC45NTQ1NDU0NTQ1NDU0NTQ1LCJkZXBUcmVlIjpbIjpBY3Rpb25TaG93IC8gY29tbW9uOlNob3dEYXRhTWVzc2FnZSAvIDMgKDguNDUwKSIsW1siaXY6U3RvcmUgLyBpdjpHZXRDbG9zZXN0U3RvcmUyIC8gMyAoNi40NTApIixbWyJpdjpTdG9yZSAvIGl2OkdldFN0b3JlQnlOYW1lIC8gMiAoMy4wMDApIixbXV0sWyJpdjpTdG9yZVByb2R1Y3RzIC8gaXY6RmlsdGVyU3RvcmVzQnlJbnZlbnRvcnkgLyAzICgyLjI1MCkiLFtbIml2OlN0b3JlUHJvZHVjdHMgLyBpdjpNYWtlU3RvcmVQcm9kdWN0c1ZpZXcgLyAzICgxLjYwMCkiLFtbIml2OlByb2R1Y3QgLyBpdjpJbXBseVByb2R1Y3RCeU5hbWUgLyAzICgyLjAwMCkiLFtdXSxbIml2OlN0b3JlcyAvIGl2OkdldEFsbFN0b3JlcyAvIDMgKDEuMDAwKSIsW11dXV1dXV1dXV0sImV4cGxhbmF0aW9uIjoic2hvdyBtZSB0aGUgY2xvc2VzdCBzdG9yZSBvZiBzdG9yZXMgd2l0aCBoaWdoIGludmVudG9yeSBmb3IgZ2FtaW5nIGNvbXB1dGVycyIsImlzVmFsaWQiOmZhbHNlLCJxdWVzdGlvbiI6InNob3cgbWUgdGhlIGNsb3Nlc3Qgc3RvcmUgd2l0aCBoaWdoIGludmVudG9yeSBmb3IgZ2FtaW5nIGNvbXB1dGVycyJ9XX0=
